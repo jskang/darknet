@@ -8,14 +8,14 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
 
 # Added by jskang
-* List function to do multiple images give a list of filenames
+* List function to do multiple images given a list of filenames
 * List function does not generate images, instead it prints out bounding boxes for
 each image
-
+* Uses YOLOv2 544x544 config and weights file
+Example:
 ```
 ./darknet yolo list cfg/yolo-voc.cfg yolo-voc.weights files.list
 ```
-example:
 ```
 data/dog.jpg: Predicted in 0.011297 seconds.
 car, 0.827306, 242, 91, 366, 147
