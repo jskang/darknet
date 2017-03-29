@@ -1,5 +1,6 @@
 #include "network.h"
 #include "detection_layer.h"
+#include "region_layer.h"
 #include "cost_layer.h"
 #include "utils.h"
 #include "parser.h"
@@ -300,6 +301,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
     float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
     for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -315,7 +317,7 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
         float *X = sized.data;
         time=clock();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        printf("%s: Predicted in %f seconds.\n", filename, sec(clock()-time));
         get_detection_boxes(l, 1, 1, thresh, probs, boxes, 0);
         if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
@@ -333,14 +335,64 @@ void test_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
+void list_yolo(char *cfgfile, char *weightfile, char *filename, float thresh)
+{
+    // image **alphabet = load_alphabet();
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+    clock_t time;
+    int j;
+    float nms=.4;
+    float hier_thresh=.5;
+
+    // Get the list of images
+    list *plist = get_paths(filename);
+    int N = plist->size;
+    char **paths = (char **)list_to_array(plist);
+    int i = 0;
+
+    for(i = 0; i < N; ++i){
+        char *path = paths[i];
+
+        image im = load_image_color(path,0,0);
+        image sized = letterbox_image(im, net.w, net.h);
+        layer l = net.layers[net.n-1];
+
+        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+
+        float *X = sized.data;
+        time=clock();
+        network_predict(net, X);
+        printf("%s: Predicted in %f seconds.\n", path, sec(clock()-time));
+        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0, hier_thresh);
+        if (l.softmax_tree && nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        print_detections(sized, l.w*l.h*l.n, thresh, boxes, probs, voc_names, l.classes);
+
+        // draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, alphabet, 20);
+        // save_image(im, "predictions");
+
+        free_image(im);
+        free_image(sized);
+        free(boxes);
+        free_ptrs((void **)probs, l.w*l.h*l.n);
+    }
+}
+
 void run_yolo(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
-    float thresh = find_float_arg(argc, argv, "-thresh", .2);
+    float thresh = find_float_arg(argc, argv, "-thresh", .24);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
     if(argc < 4){
-        fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
+        fprintf(stderr, "usage: %s %s [train/test/valid/list] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
 
@@ -352,4 +404,5 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, voc_names, 20, frame_skip, prefix, .5);
+    else if(0==strcmp(argv[2], "list")) list_yolo(cfg, weights, filename, thresh);
 }
