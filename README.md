@@ -7,12 +7,14 @@ For more information see the [Darknet project website](http://pjreddie.com/darkn
 
 For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
 
-I added capabilities to run detection on multiple images on a single run
+# Added by jskang
+* List function to do multiple images give a list of filenames
+* List function does not generate images, instead it prints out bounding boxes for
+each image
+
+```
 ./darknet yolo list cfg/yolo-voc.cfg yolo-voc.weights files.list
-
-the list function does not generate pictures, it prints out bounding boxes for
-each image and detection.
-
+```
 example:
 ```
 data/dog.jpg: Predicted in 0.011297 seconds.
