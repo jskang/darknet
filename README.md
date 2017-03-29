@@ -12,6 +12,7 @@ For questions or issues please use the [Google Group](https://groups.google.com/
 * List function does not generate images, instead it prints out bounding boxes for
 each image
 * Uses YOLOv2 544x544 config and weights file
+
 Example:
 ```
 ./darknet yolo list cfg/yolo-voc.cfg yolo-voc.weights files.list
