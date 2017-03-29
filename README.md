@@ -14,9 +14,9 @@ the list function does not generate pictures, it prints out bounding boxes for
 each image and detection.
 
 example:
-'''
+```
 data/dog.jpg: Predicted in 0.011297 seconds.
 car, 0.827306, 242, 91, 366, 147
 dog, 0.913729, 64, 149, 174, 348
 bicycle, 0.845698, 66, 131, 300, 288
-'''
+```
